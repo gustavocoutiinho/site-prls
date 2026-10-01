@@ -1,9 +1,9 @@
 {
-  "name": "prls-os",
-  "version": "1.1.0",
+  "name": "prls-os-site",
+  "version": "1.0.0",
   "private": true,
-  "description": "PRLS OS · Mapa de Processos e Calendário de Marketing 2026",
+  "description": "Portal PRLS OS — backend (Bling + DRE + auth magic-link)",
   "dependencies": {
-    "vercel": "^51.6.1"
+    "nodemailer": "^6.9.14"
   }
 }
