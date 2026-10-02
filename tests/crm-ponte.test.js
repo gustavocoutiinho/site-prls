@@ -29,3 +29,13 @@ test('preserva autenticação e bloqueia escrita e recurso arbitrário',async()=
  }
  const r=await run({resource:'financeiro'},[]);assert.equal(r.status,400);assert.equal(r.calls.length,0);
 });
+test('alterações recentes preservam paginação e retornam só IDs dos registros fora de escopo',async()=>{
+ const until=new Date().toISOString().slice(0,10)+' 00:00:00';
+ const since=new Date(Date.now()-86400000).toISOString().slice(0,10)+' 00:00:00';
+ const r=await run({resource:'orders_changes',since,until},[ok([{id:1,loja:{id:0}},{id:2,loja:{id:206020434},contato:{nome:'Não expor'}}])]);
+ assert.equal(r.status,200);assert.equal(r.body.data.length,1);assert.deepEqual(r.body.out_of_scope_ids,['2']);assert.ok(!JSON.stringify(r.body).includes('Não expor'));
+});
+test('recusa janela de alterações arbitrária',async()=>{
+ const r=await run({resource:'orders_changes',since:'2020-01-01 00:00:00',until:'2026-01-01 00:00:00'},[]);
+ assert.equal(r.status,400);assert.equal(r.calls.length,0);
+});

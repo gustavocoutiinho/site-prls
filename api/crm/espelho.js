@@ -15,7 +15,7 @@ function createHandler({ getToken = getValidToken, request = (url, options) => g
     const expected = 'Bearer ' + (secret || '');
     if (!secret || Buffer.byteLength(given) !== Buffer.byteLength(expected) || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected))) return reply(401, { error: 'nao_autorizado' });
     const q = req.query || {};
-    const allowed = new Set(['products', 'orders', 'product', 'order', 'contact', 'deposits', 'price_lists']);
+    const allowed = new Set(['products', 'orders', 'product', 'order', 'contact', 'deposits', 'price_lists', 'orders_changes']);
     if (!allowed.has(q.resource)) return reply(400, { error: 'recurso_invalido' });
     const page = Number(q.page || 1);
     if (!Number.isInteger(page) || page < 1 || page > 1000) return reply(400, { error: 'pagina_invalida' });
@@ -42,6 +42,16 @@ function createHandler({ getToken = getValidToken, request = (url, options) => g
         const data = await get('/produtos', { pagina: page, limite: 100, criterio: 5, tipo: 'T' });
         if (!Array.isArray(data)) throw new Error('formato_invalido');
         return reply(200, { data, has_more: data.length === 100 });
+      }
+      if (q.resource === 'orders_changes') {
+        const validDate = value => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(value || ''));
+        if (!validDate(q.since) || !validDate(q.until)) return reply(400, { error: 'periodo_invalido' });
+        const start = Date.parse(q.since.replace(' ', 'T') + '-03:00');
+        const end = Date.parse(q.until.replace(' ', 'T') + '-03:00');
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || end - start > 7 * 86400000 || end > Date.now() + 60000) return reply(400, { error: 'periodo_invalido' });
+        const rows = await get('/pedidos/vendas', { pagina: page, limite: 100, dataAlteracaoInicial: q.since, dataAlteracaoFinal: q.until });
+        if (!Array.isArray(rows)) throw new Error('formato_invalido');
+        return reply(200, { data: rows.filter(varejo), out_of_scope_ids: rows.filter(row => !varejo(row)).map(row => String(row.id)).filter(id => /^\d{1,20}$/.test(id)), has_more: rows.length === 100 });
       }
       if (q.resource === 'orders') {
         const year = Number(q.year);
