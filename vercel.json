@@ -1,16 +1,13 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/calendario", "destination": "/calendario.html" },
-    { "source": "/mapa", "destination": "/index.html" }
+  "crons": [
+    { "path": "/api/cron/refresh", "schedule": "0 6 * * *" }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/fonts/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
   ]
