@@ -98,3 +98,13 @@ test('histórico amplia a consulta e reduz o lote quando excede o tamanho seguro
  assert.equal(r.body.cobertura,'ate_1000_sem_comprovacao_de_totalidade');
  assert.equal(r.body.dados[0].id,'menor');
 });
+test('listagem usa rota atual e encaminha continuação sem alterar o token', async () => {
+  const token = 'continuacao-real';
+  let chamada;
+  const handler = criarPonte({segredo:()=>segredo,suri:async (...args)=>{chamada=args;return {data:{items:[],continuationToken:null}};}});
+  const res={setHeader(){},end(body){this.body=JSON.parse(body);}};
+  await handler({method:'GET',headers:{authorization:'Bearer '+segredo,'x-suri-continuation':token},query:{fonte:'suri',recurso:'contatos'}},res);
+  assert.deepEqual(chamada,['/contacts/list',token]);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.continuacao,null);
+});

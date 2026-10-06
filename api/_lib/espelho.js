@@ -1,3 +1,4 @@
+const { filtroAtendimentos, normalizarAtendimentos } = require('./suri-atendimentos');
 // Ponte exclusiva de leitura da PRLS Atacado. Não aceita URLs ou métodos do consumidor.
 const { timingSafeEqual } = require('node:crypto');
 const LOJA = '206020434';
@@ -75,7 +76,11 @@ function criarPonte({ bling, suri, eventos, segredo }) {
           continuacao = dados.length === 100 ? String(Number(pagina) + 1) : null;
         } else throw falha(400, 'Recurso não permitido.');
       } else if (q.fonte === 'suri') {
-        if (q.recurso === 'eventos') {
+        if (q.recurso === 'atendimentos') {
+          const filtro = filtroAtendimentos(q.inicio, q.fim);
+          dados = normalizarAtendimentos(await suri('/attendances', null, filtro));
+          cobertura = 'consulta_de_atendimentos_no_periodo';
+        } else if (q.recurso === 'eventos') {
           const apos = q.apos === undefined ? '0' : numero(q.apos);
           const lista = await eventos(apos);
           if (!Array.isArray(lista)) throw falha(502, 'Lista de eventos inválida.');
@@ -93,7 +98,7 @@ function criarPonte({ bling, suri, eventos, segredo }) {
           continuacao = lista.length === 25 ? String(ultimo) : null;
           cobertura = 'eventos_preservados_do_atacado';
         } else if (q.recurso === 'contatos') {
-          const resultado = await suri('/contacts?limit=5000', req.headers['x-suri-continuation']);
+          const resultado = await suri('/contacts/list', req.headers['x-suri-continuation']);
           const base = resultado.data || resultado;
           if (!Array.isArray(base.items)) throw falha(502, 'Formato de contatos inválido.');
           dados = base.items.filter(c => c.channelId === CANAL && String(c.id).startsWith(CANAL + ':')).map(c => keys(c, ['id','name','phone','email','channelId','defaultDepartmentId','dateCreate','lastActivity','lastMessageActivity','tags','userTags','agent','session','note']));

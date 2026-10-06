@@ -1,10 +1,11 @@
+const { opcoesListagem } = require('./_lib/suri-listagem');
 const { criarPonte } = require('./_lib/espelho');
 const { getValidToken, getJson } = require('./_lib/bling');
 
-async function ler(url, headers) {
+async function ler(url, headers, options = {}) {
   const r = url.startsWith('https://api.bling.com.br/Api/v3/')
     ? await getJson(url, headers, 3)
-    : await fetch(url, { headers, signal: AbortSignal.timeout(20000), redirect: 'error' });
+    : await fetch(url, { ...options, headers, signal: AbortSignal.timeout(20000), redirect: 'error' });
   if (!r.ok) throw Object.assign(new Error('Falha na origem'), { status: r.status });
   const body = await r.json();
   if (body.success === false) throw Object.assign(new Error('Falha na origem'), { status: 502 });
@@ -19,11 +20,12 @@ module.exports = criarPonte({
     const filtro = new URLSearchParams({ select: 'id,payload', evento: 'in.(new-contact,change-queue,finish-attendance)', 'payload->payload->user->>ChannelId': 'eq.wp685312314657220', id: 'gt.' + apos, order: 'id.asc', limit: '25' });
     return ler('https://frocxapiowyjrdhlirnu.supabase.co/rest/v1/prls_suri_webhook_logs?' + filtro, { apikey: token, Authorization: 'Bearer ' + token });
   },
-  suri: async (path, continuation) => {
+  suri: async (path, continuation, filtro) => {
     const base = (process.env.PRLS_SURI_URL || '').trim();
     if (!base || !base.startsWith('https://') || !process.env.PRLS_SURI_TOKEN) throw new Error('Suri não configurada');
     const headers = { Authorization: 'Bearer ' + process.env.PRLS_SURI_TOKEN.trim(), Accept: 'application/json' };
-    if (continuation) headers['x-ms-continuation'] = String(continuation);
-    return ler(base.replace(/\/$/, '') + path, headers);
+    const options = path === '/contacts/list' ? opcoesListagem(continuation) : path === '/attendances' ? {method:'POST',body:JSON.stringify(filtro)} : {};
+    if (options.body) headers['Content-Type'] = 'application/json';
+    return ler(base.replace(/\/$/, '') + path, headers, options);
   },
 });
