@@ -1,10 +1,11 @@
+const { opcoesListagem } = require('./_lib/suri-listagem');
 const { criarPonte } = require('./_lib/espelho');
 const { getValidToken, getJson } = require('./_lib/bling');
 
-async function ler(url, headers) {
+async function ler(url, headers, options = {}) {
   const r = url.startsWith('https://api.bling.com.br/Api/v3/')
     ? await getJson(url, headers, 3)
-    : await fetch(url, { headers, signal: AbortSignal.timeout(20000), redirect: 'error' });
+    : await fetch(url, { ...options, headers, signal: AbortSignal.timeout(20000), redirect: 'error' });
   if (!r.ok) throw Object.assign(new Error('Falha na origem'), { status: r.status });
   const body = await r.json();
   if (body.success === false) throw Object.assign(new Error('Falha na origem'), { status: 502 });
@@ -23,7 +24,8 @@ module.exports = criarPonte({
     const base = (process.env.PRLS_SURI_URL || '').trim();
     if (!base || !base.startsWith('https://') || !process.env.PRLS_SURI_TOKEN) throw new Error('Suri não configurada');
     const headers = { Authorization: 'Bearer ' + process.env.PRLS_SURI_TOKEN.trim(), Accept: 'application/json' };
-    if (continuation) headers['x-ms-continuation'] = String(continuation);
-    return ler(base.replace(/\/$/, '') + path, headers);
+    const options = path === '/contacts/list' ? opcoesListagem(continuation) : {};
+    if (options.body) headers['Content-Type'] = 'application/json';
+    return ler(base.replace(/\/$/, '') + path, headers, options);
   },
 });

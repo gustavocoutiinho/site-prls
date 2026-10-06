@@ -93,7 +93,7 @@ function criarPonte({ bling, suri, eventos, segredo }) {
           continuacao = lista.length === 25 ? String(ultimo) : null;
           cobertura = 'eventos_preservados_do_atacado';
         } else if (q.recurso === 'contatos') {
-          const resultado = await suri('/contacts?limit=5000', req.headers['x-suri-continuation']);
+          const resultado = await suri('/contacts/list', req.headers['x-suri-continuation']);
           const base = resultado.data || resultado;
           if (!Array.isArray(base.items)) throw falha(502, 'Formato de contatos inválido.');
           dados = base.items.filter(c => c.channelId === CANAL && String(c.id).startsWith(CANAL + ':')).map(c => keys(c, ['id','name','phone','email','channelId','defaultDepartmentId','dateCreate','lastActivity','lastMessageActivity','tags','userTags','agent','session','note']));
