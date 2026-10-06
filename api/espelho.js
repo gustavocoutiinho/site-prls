@@ -20,11 +20,11 @@ module.exports = criarPonte({
     const filtro = new URLSearchParams({ select: 'id,payload', evento: 'in.(new-contact,change-queue,finish-attendance)', 'payload->payload->user->>ChannelId': 'eq.wp685312314657220', id: 'gt.' + apos, order: 'id.asc', limit: '25' });
     return ler('https://frocxapiowyjrdhlirnu.supabase.co/rest/v1/prls_suri_webhook_logs?' + filtro, { apikey: token, Authorization: 'Bearer ' + token });
   },
-  suri: async (path, continuation) => {
+  suri: async (path, continuation, filtro) => {
     const base = (process.env.PRLS_SURI_URL || '').trim();
     if (!base || !base.startsWith('https://') || !process.env.PRLS_SURI_TOKEN) throw new Error('Suri não configurada');
     const headers = { Authorization: 'Bearer ' + process.env.PRLS_SURI_TOKEN.trim(), Accept: 'application/json' };
-    const options = path === '/contacts/list' ? opcoesListagem(continuation) : {};
+    const options = path === '/contacts/list' ? opcoesListagem(continuation) : path === '/attendances' ? {method:'POST',body:JSON.stringify(filtro)} : {};
     if (options.body) headers['Content-Type'] = 'application/json';
     return ler(base.replace(/\/$/, '') + path, headers, options);
   },
